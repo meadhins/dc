@@ -3,22 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="manifest" href="./manifest.json">
-<title>Salawat</title>
+<title>Salawa</title>
+
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#2563eb">
 
 <style>
 :root{
-  --bg: linear-gradient(135deg,#f8fafc,#eef6ff,#f8fafc);
-  --text:#0f172a;
-  --muted:#64748b;
-
+  --bg:#f8fafc;
   --card:#ffffff;
-  --shadow:0 8px 30px rgba(0,0,0,.06);
-
+  --text:#0f172a;
+  --muted:#94a3b8;
   --accent:#2563eb;
-  --accent-soft:rgba(37,99,235,.15);
-
-  --font: system-ui, sans-serif;
 }
 
 body{
@@ -26,37 +22,30 @@ body{
   padding:20px;
   max-width:700px;
   margin:auto;
-  font-family:var(--font);
+  font-family:system-ui,sans-serif;
   background:var(--bg);
-  background-size:400% 400%;
-  animation:bg 40s ease infinite;
   color:var(--text);
-}
-
-@keyframes bg{
-  from{background-position:0 50%}
-  to{background-position:100% 50%}
 }
 
 .card{
   background:var(--card);
   border-radius:24px;
-  padding:16px;
-  margin:14px 0;
-  box-shadow:var(--shadow);
+  padding:18px;
+  margin:16px 0;
+  box-shadow:0 8px 30px rgba(0,0,0,.06);
 }
 
 .title{
-  font-weight:700;
-  letter-spacing:.08em;
-  color:var(--muted);
   font-size:.85rem;
+  letter-spacing:.08em;
+  font-weight:700;
+  color:#64748b;
 }
 
 .count{
   font-size:3rem;
   font-weight:700;
-  margin:6px 0 10px;
+  margin:10px 0 14px;
 }
 
 .buttons{
@@ -66,125 +55,180 @@ body{
 
 button{
   flex:1;
-  padding:12px;
   border:none;
   border-radius:14px;
+  padding:14px;
   font-size:1rem;
   font-weight:600;
   background:var(--accent);
   color:white;
 }
 
-button:active{
-  transform:scale(0.98);
+.meta{
+  margin-top:12px;
+  font-size:.85rem;
+  color:var(--muted);
 }
 
-.footer{
-  margin-top:18px;
-  text-align:center;
-  font-size:.8rem;
-  color:var(--muted);
+.header{
+  margin-bottom:24px;
+}
+
+.time{
+  font-size:2rem;
+  font-weight:700;
+}
+
+.day{
+  color:#64748b;
 }
 </style>
 </head>
-
 <body>
+
+<div class="header">
+  <div id="clock" class="time"></div>
+  <div id="day" class="day"></div>
+</div>
 
 <div class="card">
   <div class="title">SALAWAT</div>
   <div id="salawat" class="count">0</div>
+
   <div class="buttons">
     <button onclick="add('salawat',5)">+5</button>
     <button onclick="add('salawat',10)">+10</button>
     <button onclick="add('salawat',20)">+20</button>
   </div>
+
+  <div id="salawatMeta" class="meta">No entries today</div>
 </div>
 
 <div class="card">
   <div class="title">ISTIGHFAR</div>
   <div id="istighfar" class="count">0</div>
+
   <div class="buttons">
     <button onclick="add('istighfar',5)">+5</button>
     <button onclick="add('istighfar',10)">+10</button>
     <button onclick="add('istighfar',20)">+20</button>
   </div>
+
+  <div id="istighfarMeta" class="meta">No entries today</div>
 </div>
 
-<div class="footer">
-  Resets daily at 10:00 AM
-</div>
-  
 <script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js');
-}
-</script>
-<script>
-const RESET_HOUR = 10;
-
-function todayKey(){
-  return "dhikr_" + new Date().toISOString().split('T')[0];
-}
-
-function load(){
-  const data = localStorage.getItem(todayKey());
-  if(data){
-    return JSON.parse(data);
-  }
-  return { salawat:0, istighfar:0 };
-}
-
-function save(data){
-  localStorage.setItem(todayKey(), JSON.stringify(data));
-}
-
-function render(data){
-  document.getElementById("salawat").textContent = data.salawat;
-  document.getElementById("istighfar").textContent = data.istighfar;
-}
-
-function add(type, value){
-  const data = load();
-  data[type] += value;
-  save(data);
-  render(data);
-}
-
-function checkReset(){
+function prayerDayKey(){
   const now = new Date();
+  const d = new Date(now);
 
-  const lastResetKey = "dhikr_last_reset";
-  const lastReset = localStorage.getItem(lastResetKey);
-
-  const today = new Date();
-  today.setHours(RESET_HOUR,0,0,0);
-
-  if(!lastReset){
-    localStorage.setItem(lastResetKey, Date.now());
-    return;
+  if(now.getHours() < 10){
+    d.setDate(d.getDate()-1);
   }
 
-  const last = new Date(parseInt(lastReset));
+  return "salawa_" + d.toISOString().split("T")[0];
+}
 
-  if(now > today && last < today){
-    localStorage.setItem(todayKey(), JSON.stringify({salawat:0, istighfar:0}));
-    localStorage.setItem(lastResetKey, Date.now());
+function loadData(){
+  const k = prayerDayKey();
+  const raw = localStorage.getItem(k);
+
+  if(raw) return JSON.parse(raw);
+
+  return {
+    salawat:0,
+    istighfar:0,
+    salawatUpdated:null,
+    istighfarUpdated:null
+  };
+}
+
+function saveData(data){
+  localStorage.setItem(prayerDayKey(), JSON.stringify(data));
+}
+
+function formatTime(ts){
+  return new Intl.DateTimeFormat('en-US',{
+    hour:'numeric',
+    minute:'2-digit',
+    hour12:true
+  }).format(new Date(ts));
+}
+
+function ago(ts){
+  const mins = Math.floor((Date.now()-ts)/60000);
+
+  if(mins < 1) return "just now";
+  if(mins < 60) return mins + " min ago";
+
+  const h = Math.floor(mins/60);
+  const m = mins % 60;
+
+  if(m===0) return h + "h ago";
+
+  return h + "h " + m + "m ago";
+}
+
+function render(){
+  const d = loadData();
+
+  document.getElementById("salawat").textContent = d.salawat;
+  document.getElementById("istighfar").textContent = d.istighfar;
+
+  document.getElementById("salawatMeta").textContent =
+    d.salawatUpdated
+      ? formatTime(d.salawatUpdated) + " · " + ago(d.salawatUpdated)
+      : "No entries today";
+
+  document.getElementById("istighfarMeta").textContent =
+    d.istighfarUpdated
+      ? formatTime(d.istighfarUpdated) + " · " + ago(d.istighfarUpdated)
+      : "No entries today";
+}
+
+function add(type, amount){
+  const d = loadData();
+
+  d[type] += amount;
+
+  if(type === "salawat"){
+    d.salawatUpdated = Date.now();
   }
+
+  if(type === "istighfar"){
+    d.istighfarUpdated = Date.now();
+  }
+
+  saveData(d);
+  render();
 }
 
-function init(){
-  checkReset();
-  render(load());
+function updateClock(){
+  const n = new Date();
+
+  document.getElementById("clock").textContent =
+    new Intl.DateTimeFormat('en-US',{
+      hour:'numeric',
+      minute:'2-digit',
+      second:'2-digit',
+      hour12:true
+    }).format(n);
+
+  document.getElementById("day").textContent =
+    new Intl.DateTimeFormat('en-US',{
+      weekday:'long',
+      year:'numeric',
+      month:'long',
+      day:'numeric'
+    }).format(n);
 }
 
-init();
+render();
+updateClock();
+
+setInterval(render,60000);
+setInterval(updateClock,1000);
 </script>
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js')
-    .then(() => console.log("SW OK"))
-    .catch(err => console.log("SW FAIL", err));
-}
-</script>
+
 </body>
 </html>
