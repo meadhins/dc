@@ -112,7 +112,12 @@ button:active{
 <div class="footer">
   Resets daily at 10:00 AM
 </div>
-
+  
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
+}
+</script>
 <script>
 const RESET_HOUR = 10;
 
