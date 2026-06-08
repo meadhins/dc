@@ -1,6 +1,6 @@
 {
-  "name": "Salah Dashboard",
-  "short_name": "Salah",
+  "name": "Dhikr Counter",
+  "short_name": "Dhikr",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#f8fafc",
