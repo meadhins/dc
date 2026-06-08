@@ -214,15 +214,17 @@ function updateClock(){
       hour12:true
     }).format(n);
 
-  document.getElementById("day").textContent =
-    new Intl.DateTimeFormat('en-US',{
-      weekday:'long',
-      year:'numeric',
-      month:'long',
-      day:'numeric'
-    }).format(n);
-}
+document.getElementById("day").textContent =
+  new Intl.DateTimeFormat('en-US',{
+    weekday:'long'
+  }).format(n);
 
+document.getElementById("date").textContent =
+  new Intl.DateTimeFormat('en-US',{
+    year:'numeric',
+    month:'long',
+    day:'numeric'
+  }).format(n);
 render();
 updateClock();
 
