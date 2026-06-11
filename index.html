@@ -62,6 +62,7 @@ button{
   font-weight:600;
   background:var(--accent);
   color:white;
+  cursor:pointer;
 }
 
 .meta{
@@ -82,6 +83,24 @@ button{
 .day{
   color:#64748b;
   margin-bottom:5px;
+}
+
+/* Minimalist, completely non-distracting Reset Link Styles */
+.btn-minimal {
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 4px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  display: inline-block;
+  width: auto;
+}
+
+.btn-minimal:active {
+  opacity: 0.6;
 }
 </style>
 </head>
@@ -119,19 +138,18 @@ button{
   <div id="istighfarMeta" class="meta">No entries today</div>
 </div>
 
+<!-- Non-distracting Manual Reset Section -->
+<div class="card" style="text-align: center;">
+  <button id="resetBtn" class="btn-minimal">Hold 2 Seconds to Reset</button>
+  <div id="resetMeta" class="meta">Never reset during this session</div>
+</div>
+
 <script>
 function prayerDayKey(){
-  const now = new Date();
-  const d = new Date(now);
-
-  if(now.getHours() < 4){
-    d.setDate(d.getDate()-1);
-  }
-
-  return "salawa_" + d.toISOString().split("T")[0];
+  return "salawa_current";
 }
 
-function loadData(){
+function loadData() {
   const k = prayerDayKey();
   const raw = localStorage.getItem(k);
 
@@ -141,7 +159,8 @@ function loadData(){
     salawat:0,
     istighfar:0,
     salawatUpdated:null,
-    istighfarUpdated:null
+    istighfarUpdated:null,
+    lastReset:null
   };
 }
 
@@ -186,6 +205,11 @@ function render(){
     d.istighfarUpdated
       ? formatTime(d.istighfarUpdated) + " · " + ago(d.istighfarUpdated)
       : "No entries today";
+
+  document.getElementById("resetMeta").textContent =
+    d.lastReset
+      ? "Last reset: " + formatTime(d.lastReset) + " · " + ago(d.lastReset)
+      : "Never reset during this session";
 }
 
 function add(type, amount){
@@ -227,6 +251,49 @@ function updateClock(){
       day:'numeric'
     }).format(n);
 }
+
+// Press and hold logic (2 seconds / 2000ms)
+const resetBtn = document.getElementById('resetBtn');
+let holdTimer;
+
+function startHold(e) {
+  e.preventDefault(); 
+  resetBtn.textContent = "Holding...";
+  holdTimer = setTimeout(() => {
+    executeReset();
+  }, 2000);
+}
+
+function cancelHold() {
+  clearTimeout(holdTimer);
+  resetBtn.textContent = "Hold 2 Seconds to Reset";
+}
+
+function executeReset() {
+  const d = {
+    salawat: 0,
+    istighfar: 0,
+    salawatUpdated: null,
+    istighfarUpdated: null,
+    lastReset: Date.now()
+  };
+  saveData(d);
+  render();
+  resetBtn.textContent = "Reset Successful!";
+  setTimeout(() => {
+    resetBtn.textContent = "Hold 2 Seconds to Reset";
+  }, 1500);
+}
+
+// Mouse Event Listeners
+resetBtn.addEventListener('mousedown', startHold);
+resetBtn.addEventListener('mouseup', cancelHold);
+resetBtn.addEventListener('mouseleave', cancelHold);
+
+// Touch Event Listeners (For Mobile Phones)
+resetBtn.addEventListener('touchstart', startHold);
+resetBtn.addEventListener('touchend', cancelHold);
+
 render();
 updateClock();
 
